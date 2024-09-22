@@ -2,7 +2,7 @@
 import streamlit as st
 import pickle
 import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
+#from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Load the saved Logistic Regression model and TF-IDF vectorizer
 model = joblib.load('logistic_regression_model.pkl')
