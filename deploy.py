@@ -1,12 +1,14 @@
-
 import streamlit as st
-import pickle
+import pickle  # <-- Use pickle instead of joblib
 import numpy as np
 #from sklearn.feature_extraction.text import TfidfVectorizer
 
-# Load the saved Logistic Regression model and TF-IDF vectorizer
-model = joblib.load('logistic_regression_model.pkl')
-vectorizer = joblib.load('tfidf_vectorizer_lr.pkl')
+# Load the saved Logistic Regression model and TF-IDF vectorizer using pickle
+with open('logistic_regression_model.pkl', 'rb') as model_file:
+    model = pickle.load(model_file)
+
+with open('tfidf_vectorizer_lr.pkl', 'rb') as vectorizer_file:
+    vectorizer = pickle.load(vectorizer_file)
 
 # Function to predict whether a product is recommended
 def predict_is_recommended(text_review):
