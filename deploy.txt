@@ -8,4 +8,6 @@ keras
 tensorflow
 matplotlib
 seaborn
+sklearn.feature_extraction.text              
+
 
