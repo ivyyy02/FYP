@@ -1,3 +1,5 @@
+pip install scikit-learn
+
 import streamlit as st
 import pickle  # <-- Use pickle instead of joblib
 import numpy as np
