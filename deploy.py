@@ -1,7 +1,7 @@
-import streamlit as st
-import joblib
-import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
+# import streamlit as st
+# import joblib
+# import numpy as np
+# from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Load the saved Logistic Regression model and TF-IDF vectorizer
 model = joblib.load('logistic_regression_model.pkl')
