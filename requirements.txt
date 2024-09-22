@@ -1,3 +1,12 @@
+sklearn
+joblib
+warnings
 streamlit
 scikit-learn
-joblib
+numpy
+pandas
+keras
+tensorflow
+matplotlib
+seaborn
+ 
