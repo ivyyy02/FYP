@@ -1,5 +1,4 @@
 sklearn
-joblib
 warnings
 streamlit
 scikit-learn
