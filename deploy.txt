@@ -1,11 +1,4 @@
-sklearn
-warnings
-streamlit
+streamlit 
+pickle  
+numpy 
 scikit-learn
-numpy
-pandas
-keras
-tensorflow
-matplotlib
-seaborn
-
