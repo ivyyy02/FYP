@@ -8,7 +8,7 @@ model = joblib.load('logistic_regression_model.pkl')
 vectorizer = joblib.load('tfidf_vectorizer_lr.pkl')
 
 # Streamlit UI
-st.title("Product Recommendation Sentiment Analysis")
+st.title("Product Recommendation Prediction")
 
 st.write("Enter a product review below and the model will predict if the product is recommended or not.")
 
