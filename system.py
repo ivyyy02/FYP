@@ -6,11 +6,11 @@ from surprise import Dataset, Reader, SVD
 from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-# Function to load the dataset
+# Function to load the dataset from a pickle file
 @st.cache_resource
 def load_data():
-    # Replace 'your_dataset.csv' with the actual path to your dataset
-    df = pd.read_csv("final_df.pkl")
+    # Load the dataset from the pickle file
+    df = pd.read_pickle("final_df.pkl")
     return df
 
 # Function to load the SVD model or train it if not saved
