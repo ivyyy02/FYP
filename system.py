@@ -1,25 +1,17 @@
 import streamlit as st
 import pandas as pd
-import requests
-import io
+import gzip
+import pickle
 from implicit.als import AlternatingLeastSquares
 from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
 import scipy.sparse as sparse
 
-# Function to download from Google Drive
-def download_file_from_url(url):
-    r = requests.get(url, allow_redirects=True)
-    return io.BytesIO(r.content)
-
-# Google Drive link to the pickle file
-file_url = 'https://drive.google.com/uc?export=download&id=1xF-HjQEaYO102fH8VxjiISD83Pi94cbH'
-
-# Load the dataframe from Google Drive
+# Load the compressed pickle file (final_df.pkl.gz)
 @st.cache_data
 def load_data():
-    file_bytes = download_file_from_url(file_url)
-    df = pd.read_pickle(file_bytes)
+    with gzip.open('final_df.pkl.gz', 'rb') as f:
+        df = pickle.load(f)
     return df
 
 # Load the data
