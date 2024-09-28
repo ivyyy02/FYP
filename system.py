@@ -1,26 +1,36 @@
-# Import necessary libraries
+import streamlit as st
 import pandas as pd
+import requests
+import io
 from surprise import Dataset, Reader, SVD
 from surprise.model_selection import train_test_split
 from surprise import accuracy
 from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
-import streamlit as st
 
-# Title for the Streamlit app
-st.title("Hybrid Product Recommendation System")
+# Function to download from Google Drive
+def download_file_from_url(url):
+    r = requests.get(url, allow_redirects=True)
+    return io.BytesIO(r.content)
 
-# Load the dataset from a pickle file
+# Google Drive link to the pickle file
+file_url = 'https://drive.google.com/uc?export=download&id=1xF-HjQEaYO102fH8VxjiISD83Pi94cbH'
+
+# Load the dataframe from Google Drive
 @st.cache
 def load_data():
-    df = pd.read_pickle('final_df.pkl')  # Replace with your pickle file path
+    file_bytes = download_file_from_url(file_url)
+    df = pd.read_pickle(file_bytes)
     return df
 
+# Load the data
 df = load_data()
 
 # Prepare the dataset for Collaborative Filtering
 reader = Reader(rating_scale=(1, 5))
 data = Dataset.load_from_df(df[['Author_ID', 'Product_ID', 'Rating_Given']], reader)
+
+# Split the data into training and testing sets
 trainset, testset = train_test_split(data, test_size=0.25)
 
 # Initialize and train the SVD model for collaborative filtering
@@ -42,6 +52,7 @@ def get_top_n_recommendations(predictions, n=5):
         top_n[uid] = user_ratings[:n]
     return top_n
 
+# Get top N product recommendations for all users based on Collaborative Filtering
 top_n_recommendations_cf = get_top_n_recommendations(predictions, n=5)
 
 # Content-Based Filtering setup
@@ -81,10 +92,14 @@ def hybrid_recommendations(user_id, product_id, df, predictions, nn, n=5):
     return recommended_products[relevant_columns].head(n)
 
 # Streamlit User Inputs
+st.title("Hybrid Product Recommendation System")
 author_id = st.text_input("Enter User ID:", value="7746509195")
 product_id = st.text_input("Enter Product ID:", value="P421996")
 
 if st.button("Get Recommendations"):
-    recommended_products = hybrid_recommendations(author_id, product_id, df, predictions, nn, n=5)
-    st.write(f"Top 5 hybrid recommendations for user {author_id} based on product {product_id}:")
-    st.dataframe(recommended_products)
+    try:
+        recommended_products = hybrid_recommendations(author_id, product_id, df, predictions, nn, n=5)
+        st.write(f"Top 5 hybrid recommendations for user {author_id} based on product {product_id}:")
+        st.dataframe(recommended_products)
+    except Exception as e:
+        st.error(f"Error occurred: {e}")
