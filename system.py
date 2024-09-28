@@ -1,11 +1,14 @@
-import streamlit as st
+# Import necessary libraries
 import pandas as pd
-import gzip
-import pickle
-from implicit.als import AlternatingLeastSquares
+from surprise import Dataset, Reader, SVD
+from surprise.model_selection import train_test_split
+from surprise import accuracy
 from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
-import scipy.sparse as sparse
+import streamlit as st
+
+# Title for the Streamlit app
+st.title("Hybrid Product Recommendation System")
 
 # Load the compressed pickle file (final_df.pkl.gz)
 @st.cache_data
@@ -17,28 +20,31 @@ def load_data():
 # Load the data
 df = load_data()
 
-# Prepare the data for the ALS model (Collaborative Filtering with Implicit)
-def prepare_sparse_matrix(df):
-    user_item_matrix = df.pivot(index='Author_ID', columns='Product_ID', values='Rating_Given').fillna(0)
-    sparse_user_item = sparse.csr_matrix(user_item_matrix.values)
-    return sparse_user_item, user_item_matrix
+# Prepare the dataset for Collaborative Filtering
+reader = Reader(rating_scale=(1, 5))
+data = Dataset.load_from_df(df[['Author_ID', 'Product_ID', 'Rating_Given']], reader)
+trainset, testset = train_test_split(data, test_size=0.25)
 
-sparse_user_item, user_item_matrix = prepare_sparse_matrix(df)
+# Initialize and train the SVD model for collaborative filtering
+svd_model = SVD()
+svd_model.fit(trainset)
 
-# Train the ALS model
-def train_als_model(sparse_user_item):
-    model = AlternatingLeastSquares(factors=50, regularization=0.01, iterations=30)
-    model.fit(sparse_user_item)
-    return model
+# Make predictions on the test set
+predictions = svd_model.test(testset)
 
-als_model = train_als_model(sparse_user_item)
+# Function to get top N recommendations for a specific user (Collaborative Filtering)
+def get_top_n_recommendations(predictions, n=5):
+    top_n = {}
+    for uid, iid, true_r, est, _ in predictions:
+        if uid not in top_n:
+            top_n[uid] = []
+        top_n[uid].append((iid, est))
+    for uid, user_ratings in top_n.items():
+        user_ratings.sort(key=lambda x: x[1], reverse=True)
+        top_n[uid] = user_ratings[:n]
+    return top_n
 
-# Function to get top N ALS recommendations for a specific user
-def get_als_recommendations(user_id, model, user_item_matrix, df, n=5):
-    user_idx = list(user_item_matrix.index).index(user_id)
-    recommended_ids, _ = model.recommend(user_idx, sparse_user_item[user_idx], N=n)
-    recommended_products = df[df['Product_ID'].isin(user_item_matrix.columns[recommended_ids])]
-    return recommended_products[['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 'Rating_Given']]
+top_n_recommendations_cf = get_top_n_recommendations(predictions, n=5)
 
 # Content-Based Filtering setup
 df['Product_Name'] = df['Product_Name'].fillna('')
@@ -61,27 +67,26 @@ def get_cb_recommendations(product_id, df, nn, n=5):
     return df.iloc[top_n_similar_products][['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 'Rating_Given']]
 
 # Hybrid Recommendation System
-def hybrid_recommendations(user_id, product_id, als_model, nn, df, n=5):
-    # Get ALS recommendations
-    als_recommendations = get_als_recommendations(user_id, als_model, user_item_matrix, df, n=n)
-    
-    # Get Content-Based recommendations
-    cb_recommendations = get_cb_recommendations(product_id, df, nn, n=n)
-    
-    # Combine ALS and CB recommendations
-    combined_recommendations = pd.concat([als_recommendations, cb_recommendations]).drop_duplicates(subset='Product_ID')
-    
-    return combined_recommendations.head(n)
+def hybrid_recommendations(user_id, product_id, df, predictions, nn, n=5):
+    if user_id in top_n_recommendations_cf:
+        cf_recommendations = [iid for iid, _ in top_n_recommendations_cf[user_id]]
+    else:
+        cf_recommendations = []
+
+    cb_recommendations = get_cb_recommendations(product_id, df, nn, n * 2)
+    cb_recommendations_list = list(cb_recommendations['Product_ID'])
+    combined_recommendations = list(set(cf_recommendations + cb_recommendations_list))
+
+    recommended_products = df[df['Product_ID'].isin(combined_recommendations)].drop_duplicates(subset='Product_ID')
+    recommended_products = recommended_products.sort_values(by='Loves_Count_Product', ascending=False)
+    relevant_columns = ['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 'Rating_Given', 'Loves_Count_Product']
+    return recommended_products[relevant_columns].head(n)
 
 # Streamlit User Inputs
-st.title("Hybrid Product Recommendation System")
 author_id = st.text_input("Enter User ID:", value="7746509195")
 product_id = st.text_input("Enter Product ID:", value="P421996")
 
 if st.button("Get Recommendations"):
-    try:
-        recommended_products = hybrid_recommendations(author_id, product_id, als_model, nn, df, n=5)
-        st.write(f"Top 5 hybrid recommendations for user {author_id} based on product {product_id}:")
-        st.dataframe(recommended_products)
-    except Exception as e:
-        st.error(f"Error occurred: {e}")
+    recommended_products = hybrid_recommendations(author_id, product_id, df, predictions, nn, n=5)
+    st.write(f"Top 5 hybrid recommendations for user {author_id} based on product {product_id}:")
+    st.dataframe(recommended_products)
