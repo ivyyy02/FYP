@@ -108,6 +108,6 @@ def main():
         st.write("Top 5 Hybrid Recommendations:")
         st.dataframe(recommendations)
 
-# Run the Streamlit app
-if __name__ == '__main__':
-    main()
+# # Run the Streamlit app
+# if __name__ == '__main__':
+#     main()
