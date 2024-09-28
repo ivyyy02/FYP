@@ -59,7 +59,6 @@ def get_cb_recommendations(product_id, df, nn, n=5):
     
     # Get the top N similar products
     top_n_similar_products = indices.flatten()[1:n+1]  # Skip the first as it will be the product itself
-
     return df.iloc[top_n_similar_products][['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 'Rating_Given']]
 
 # Streamlit Interface
