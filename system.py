@@ -1,7 +1,6 @@
 # Import necessary libraries
 # Import necessary libraries
-import numpy as np  # Ensure numpy is imported early
-np._import_array()   # This should initialize numpy if needed
+import numpy as np  # Standard numpy import
 import pandas as pd
 from surprise import Dataset, Reader, SVD
 from surprise.model_selection import train_test_split
@@ -17,88 +16,102 @@ def load_data():
     # Load your dataset (adjust the path if necessary)
     df = pd.read_pickle("final_df.pkl")
     return df
+    
+# Collaborative Filtering (CF) - Part 1
+@st.cache
+def collaborative_filtering(df):
+    reader = Reader(rating_scale=(1, 5))  # Ratings are between 1 and 5
+    data = Dataset.load_from_df(df[['Author_ID', 'Product_ID', 'Rating_Given']], reader)
 
-# Function to load the SVD model or train it if not saved
-@st.cache_resource
-def load_svd_model(trainset):
-    if os.path.exists('svd_model.pkl'):
-        return joblib.load('svd_model.pkl')
-    else:
-        svd_model = SVD()
-        svd_model.fit(trainset)
-        joblib.dump(svd_model, 'svd_model.pkl')
-        return svd_model
+    # Train and test split
+    trainset = data.build_full_trainset()
+    svd_model = SVD()
+    svd_model.fit(trainset)
+    
+    return svd_model
 
-# Function to load NearestNeighbors model or train it if not saved
-@st.cache_resource
-def load_nn_model(tfidf_matrix):
+# Content-Based Filtering (CB) - Part 2
+@st.cache
+def content_based_filtering(df):
+    # Handle missing values
+    df['Text_Review'] = df['Text_Review'].apply(lambda tokens: ' '.join(tokens) if isinstance(tokens, list) else tokens).fillna('')
+    df['combined_features'] = df['Product_Name'] + ' ' + df['Brand_Name'] + ' ' + df['Primary_Category'] + ' ' + df['Text_Review'] + ' ' + df['Price'].astype(str)
+
+    # TF-IDF Vectorizer
+    tfidf_vectorizer = TfidfVectorizer(stop_words='english', max_features=15000)
+    tfidf_matrix = tfidf_vectorizer.fit_transform(df['combined_features'])
+
+    # NearestNeighbors Model
     nn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=15)
     nn.fit(tfidf_matrix)
-    return nn
+    
+    return nn, tfidf_matrix
 
-# Main function to run Streamlit app
+# Hybrid Recommendation System - Part 3
+def hybrid_recommendations(user_id, product_id, df, svd_model, nn, n=5):
+    # CF Recommendations
+    cf_recommendations = get_top_n_recommendations_cf(svd_model, user_id, df, n)
+
+    # CB Recommendations
+    cb_recommendations = get_cb_recommendations(product_id, df, nn, n * 2)
+
+    # Combine CF and CB results
+    combined_recommendations = list(set(cf_recommendations + list(cb_recommendations['Product_ID'])))
+    recommended_products = df[df['Product_ID'].isin(combined_recommendations)].drop_duplicates(subset='Product_ID')
+
+    # Sort and return
+    return recommended_products.sort_values(by='Loves_Count_Product', ascending=False)[['Product_ID', 'Product_Name', 'Price', 'Primary_Category', 'Rating_Given']].head(n)
+
+# Function to get CF Recommendations
+def get_top_n_recommendations_cf(svd_model, user_id, df, n=5):
+    # Get all product_ids
+    product_ids = df['Product_ID'].unique()
+
+    # Make predictions for all products for the user
+    predictions = [svd_model.predict(user_id, product_id) for product_id in product_ids]
+    
+    # Sort predictions by estimated rating
+    predictions.sort(key=lambda x: x.est, reverse=True)
+    
+    # Return the top N recommended product IDs
+    return [pred.iid for pred in predictions[:n]]
+
+# Function to get CB Recommendations
+def get_cb_recommendations(product_id, df, nn, n=5):
+    # Get index of the given product
+    product_index = df[df['Product_ID'] == product_id].index[0]
+    
+    # Find the top N nearest neighbors (similar products)
+    distances, indices = nn.kneighbors(tfidf_matrix[product_index], n_neighbors=n+1)  # +1 because the product itself will be included
+    
+    # Get the top N similar products
+    top_n_similar_products = indices.flatten()[1:n+1]  # Skip the first as it will be the product itself
+
+    return df.iloc[top_n_similar_products][['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 'Rating_Given']]
+
+# Main Streamlit App Code
 def main():
     st.title("Hybrid Product Recommendation System")
 
     # Load dataset
     df = load_data()
 
-    # Prepare the training data for collaborative filtering
-    reader = Reader(rating_scale=(1, 5))
-    data = Dataset.load_from_df(df[['Author_ID', 'Product_ID', 'Rating_Given']], reader)
+    # Get collaborative and content-based models
+    svd_model = collaborative_filtering(df)
+    nn, tfidf_matrix = content_based_filtering(df)
 
-    # Train/test split
-    trainset, testset = train_test_split(data, test_size=0.25)
+    # Input user_id and product_id
+    user_id = st.text_input('Enter User ID:', '1312882358')
+    product_id = st.text_input('Enter Product ID:', 'P421996')
 
-    # Load or train SVD model
-    svd_model = load_svd_model(trainset)
+    if st.button('Get Recommendations'):
+        # Get hybrid recommendations
+        recommendations = hybrid_recommendations(user_id, product_id, df, svd_model, nn, n=5)
 
-    # TF-IDF vectorization for content-based filtering
-    df['Text_Review'] = df['Text_Review'].apply(lambda tokens: ' '.join(tokens) if isinstance(tokens, list) else tokens).fillna('')
-    df['combined_features'] = df['Product_Name'] + ' ' + df['Brand_Name'] + ' ' + df['Primary_Category'] + ' ' + df['Text_Review'] + ' ' + df['Price'].astype(str)
+        # Display recommendations
+        st.write("Top 5 Hybrid Recommendations:")
+        st.dataframe(recommendations)
 
-    tfidf_vectorizer = TfidfVectorizer(stop_words='english', max_features=15000)
-    tfidf_matrix = tfidf_vectorizer.fit_transform(df['combined_features'])
-
-    # Load or train NearestNeighbors model
-    nn_model = load_nn_model(tfidf_matrix)
-
-    # Input for user and product ID for recommendations
-    author_id = st.text_input('Enter User ID:')
-    product_id = st.text_input('Enter Product ID:')
-
-    # Collaborative Filtering Predictions
-    if author_id:
-        # Get CF-based recommendations
-        predictions = svd_model.test(testset)
-        top_n_recommendations_cf = get_top_n_recommendations(predictions)
-        if author_id in top_n_recommendations_cf:
-            st.write(f"Top Collaborative Filtering Recommendations for User {author_id}:")
-            st.write(top_n_recommendations_cf[author_id])
-
-    # Content-Based Filtering Predictions
-    if product_id:
-        st.write(f"Top Content-Based Recommendations for Product {product_id}:")
-        recommendations = get_cb_recommendations(product_id, df, nn_model)
-        st.write(recommendations)
-
-# Helper functions for recommendations
-def get_top_n_recommendations(predictions, n=5):
-    top_n = {}
-    for uid, iid, true_r, est, _ in predictions:
-        if uid not in top_n:
-            top_n[uid] = []
-        top_n[uid].append((iid, est))
-    for uid, user_ratings in top_n.items():
-        user_ratings.sort(key=lambda x: x[1], reverse=True)
-        top_n[uid] = user_ratings[:n]
-    return top_n
-
-def get_cb_recommendations(product_id, df, nn_model, n=5):
-    product_index = df[df['Product_ID'] == product_id].index[0]
-    distances, indices = nn_model.kneighbors(tfidf_matrix[product_index], n_neighbors=n+1)
-    top_n_similar_products = indices.flatten()[1:n+1]
-    return df.iloc[top_n_similar_products][['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 'Rating_Given']]
-
+# Run the Streamlit app
 if __name__ == '__main__':
     main()
