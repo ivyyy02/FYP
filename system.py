@@ -6,9 +6,9 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
 import streamlit as st
 
-# Load the compressed pickle file (final_df.pkl.gz)
 @st.cache_data
 def load_data():
+    # Load a smaller or more optimized dataset if possible
     with gzip.open('final_df.pkl.gz', 'rb') as f:
         df = pickle.load(f)
     return df
