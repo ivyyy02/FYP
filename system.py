@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import gzip
 import pickle
-from implicit.als import AlternatingLeastSquares
+from lightfm import LightFM
 from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
 import scipy.sparse as sparse
@@ -17,7 +17,7 @@ def load_data():
 # Load the data
 df = load_data()
 
-# Prepare the data for the ALS model (Collaborative Filtering with Implicit)
+# Prepare the data for LightFM (Collaborative Filtering)
 def prepare_sparse_matrix(df):
     user_item_matrix = df.pivot(index='Author_ID', columns='Product_ID', values='Rating_Given').fillna(0)
     sparse_user_item = sparse.csr_matrix(user_item_matrix.values)
@@ -25,19 +25,20 @@ def prepare_sparse_matrix(df):
 
 sparse_user_item, user_item_matrix = prepare_sparse_matrix(df)
 
-# Train the ALS model
-def train_als_model(sparse_user_item):
-    model = AlternatingLeastSquares(factors=50, regularization=0.01, iterations=30)
-    model.fit(sparse_user_item)
+# Train the LightFM model
+def train_lightfm_model(sparse_user_item):
+    model = LightFM(loss='warp')  # Using Weighted Approximate-Rank Pairwise loss
+    model.fit(sparse_user_item, epochs=30, num_threads=4)
     return model
 
-als_model = train_als_model(sparse_user_item)
+lightfm_model = train_lightfm_model(sparse_user_item)
 
-# Function to get top N ALS recommendations for a specific user
-def get_als_recommendations(user_id, model, user_item_matrix, df, n=5):
+# Function to get top N LightFM recommendations for a specific user
+def get_lightfm_recommendations(user_id, model, user_item_matrix, df, n=5):
     user_idx = list(user_item_matrix.index).index(user_id)
-    recommended_ids, _ = model.recommend(user_idx, sparse_user_item[user_idx], N=n)
-    recommended_products = df[df['Product_ID'].isin(user_item_matrix.columns[recommended_ids])]
+    scores = model.predict(user_idx, np.arange(sparse_user_item.shape[1]))
+    top_indices = scores.argsort()[::-1][:n]
+    recommended_products = df[df['Product_ID'].isin(user_item_matrix.columns[top_indices])]
     return recommended_products[['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 'Rating_Given']]
 
 # Content-Based Filtering setup
@@ -61,15 +62,15 @@ def get_cb_recommendations(product_id, df, nn, n=5):
     return df.iloc[top_n_similar_products][['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 'Rating_Given']]
 
 # Hybrid Recommendation System
-def hybrid_recommendations(user_id, product_id, als_model, nn, df, n=5):
-    # Get ALS recommendations
-    als_recommendations = get_als_recommendations(user_id, als_model, user_item_matrix, df, n=n)
+def hybrid_recommendations(user_id, product_id, lightfm_model, nn, df, n=5):
+    # Get LightFM recommendations
+    lightfm_recommendations = get_lightfm_recommendations(user_id, lightfm_model, user_item_matrix, df, n=n)
     
     # Get Content-Based recommendations
     cb_recommendations = get_cb_recommendations(product_id, df, nn, n=n)
     
-    # Combine ALS and CB recommendations
-    combined_recommendations = pd.concat([als_recommendations, cb_recommendations]).drop_duplicates(subset='Product_ID')
+    # Combine LightFM and CB recommendations
+    combined_recommendations = pd.concat([lightfm_recommendations, cb_recommendations]).drop_duplicates(subset='Product_ID')
     
     return combined_recommendations.head(n)
 
@@ -80,7 +81,7 @@ product_id = st.text_input("Enter Product ID:", value="P421996")
 
 if st.button("Get Recommendations"):
     try:
-        recommended_products = hybrid_recommendations(author_id, product_id, als_model, nn, df, n=5)
+        recommended_products = hybrid_recommendations(author_id, product_id, lightfm_model, nn, df, n=5)
         st.write(f"Top 5 hybrid recommendations for user {author_id} based on product {product_id}:")
         st.dataframe(recommended_products)
     except Exception as e:
