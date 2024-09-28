@@ -16,9 +16,6 @@ def load_data():
 # Load the data
 df = load_data()
 
-# Reduce the data size by half
-df = df.sample(frac=0.5)
-
 ### Step 1: Content-Based Filtering (CB) with Enhanced Feature Engineering
 # First, handle missing values by filling NaN with empty strings in relevant columns
 df['Product_Name'] = df['Product_Name'].fillna('')
