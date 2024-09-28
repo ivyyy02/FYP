@@ -1,3 +1,5 @@
+import numpy
+numpy._import_array()  # Ensure NumPy is properly initialized
 import streamlit as st
 import pandas as pd
 import requests
