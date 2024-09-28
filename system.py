@@ -1,5 +1,6 @@
 import joblib
 import os
+import streamlit as st  # <-- Add this line to import Streamlit
 
 # Function to load the SVD model or train it if not saved
 @st.cache
