@@ -1,6 +1,5 @@
 streamlit
-pandas
-pickle 
+pandas 
 surprise
 scikit-learn
 scipy
