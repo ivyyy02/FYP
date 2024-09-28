@@ -1,7 +1,6 @@
 streamlit
 pandas
-gzip
-pickle5 
+pickle5  
 lightfm
 scikit-learn
 scipy
