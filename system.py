@@ -6,15 +6,18 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
 import streamlit as st
 
+# Load the compressed pickle file (final_df.pkl.gz)
 @st.cache_data
 def load_data():
-    # Load a smaller or more optimized dataset if possible
     with gzip.open('final_df.pkl.gz', 'rb') as f:
         df = pickle.load(f)
     return df
 
 # Load the data
 df = load_data()
+
+# Reduce the data size by half
+df = df.sample(frac=0.5)
 
 ### Step 1: Content-Based Filtering (CB) with Enhanced Feature Engineering
 # First, handle missing values by filling NaN with empty strings in relevant columns
@@ -42,7 +45,7 @@ tfidf_vectorizer = TfidfVectorizer(stop_words='english', max_features=15000, min
 tfidf_matrix = tfidf_vectorizer.fit_transform(df['combined_features'])
 
 # Initialize NearestNeighbors with cosine similarity
-nn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=5)  # Increased n_neighbors for better diversity
+nn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=15)  # Increased n_neighbors for better diversity
 nn.fit(tfidf_matrix)
 
 # Function to get product recommendations based on Content-Based Filtering using Nearest Neighbors
