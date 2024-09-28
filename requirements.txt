@@ -1,8 +1,5 @@
 streamlit
 pandas
-gzip
-pickle
-lightfm
 scikit-learn
 scipy
-numpy
+lightfm
