@@ -1,8 +1,8 @@
 streamlit
 pandas
+gzip
+pickle5 
+lightfm
 scikit-learn
-implicit
 scipy
 numpy
-gzip
-pickle
