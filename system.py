@@ -42,7 +42,7 @@ tfidf_vectorizer = TfidfVectorizer(stop_words='english', max_features=15000, min
 tfidf_matrix = tfidf_vectorizer.fit_transform(df['combined_features'])
 
 # Initialize NearestNeighbors with cosine similarity
-nn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=15)  # Increased n_neighbors for better diversity
+nn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=5)  # Increased n_neighbors for better diversity
 nn.fit(tfidf_matrix)
 
 # Function to get product recommendations based on Content-Based Filtering using Nearest Neighbors
