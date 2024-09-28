@@ -1,6 +1,8 @@
 streamlit
-pandas 
-surprise
+pandas
+gzip
+pickle
+lightfm
 scikit-learn
 scipy
 numpy
