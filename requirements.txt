@@ -1,5 +1,7 @@
 streamlit
 pandas
-lightfm
+requests
 scikit-learn
-joblib
+implicit
+scipy
+numpy
