@@ -1,6 +1,6 @@
 streamlit
 pandas
-scikit-learn
-surprise
-joblib
 numpy
+scikit-surprise  
+scikit-learn
+joblib
