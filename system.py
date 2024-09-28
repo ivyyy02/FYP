@@ -5,6 +5,8 @@ import streamlit as st
 from surprise import Dataset, Reader, SVD
 from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
+
 
 # Function to load the dataset from a pickle file
 @st.cache_resource
