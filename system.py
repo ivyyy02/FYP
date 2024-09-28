@@ -7,23 +7,32 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
 import scipy.sparse as sparse
 
-# Function to download from Google Drive
-def download_file_from_url(url):
-    r = requests.get(url, allow_redirects=True)
-    return io.BytesIO(r.content)
+# # Function to download from Google Drive
+# def download_file_from_url(url):
+#     r = requests.get(url, allow_redirects=True)
+#     return io.BytesIO(r.content)
 
-# Google Drive link to the pickle file
-file_url = 'https://drive.google.com/uc?export=download&id=1xF-HjQEaYO102fH8VxjiISD83Pi94cbH'
+# # Google Drive link to the pickle file
+# file_url = 'https://drive.google.com/uc?export=download&id=1xF-HjQEaYO102fH8VxjiISD83Pi94cbH'
 
-# Load the dataframe from Google Drive
-@st.cache_data
-def load_data():
-    file_bytes = download_file_from_url(file_url)
-    df = pd.read_pickle(file_bytes)
-    return df
+# # Load the dataframe from Google Drive
+# @st.cache_data
+# def load_data():
+#     file_bytes = download_file_from_url(file_url)
+#     df = pd.read_pickle(file_bytes)
+#     return df
 
-# Load the data
-df = load_data()
+# # Load the data
+# df = load_data()
+
+import requests
+
+url = "https://https://drive.google.com/file/d/1xF-HjQEaYO102fH8VxjiISD83Pi94cbH/view?usp=drive_link/final_df.pkl"
+r = requests.get(url, allow_redirects=True)
+open('final_df.pkl', 'wb').write(r.content)
+
+# Then, load the pickle file as usual
+df = pd.read_pickle('final_df.pkl')
 
 # Prepare the data for the ALS model (Collaborative Filtering with Implicit)
 def prepare_sparse_matrix(df):
