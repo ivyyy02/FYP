@@ -1,5 +1,7 @@
 # Import necessary libraries
-import numpy as np  # Explicit numpy import to avoid issues with numpy.core.multiarray
+# Import necessary libraries
+import numpy as np  # Ensure numpy is imported early
+np._import_array()   # This should initialize numpy if needed
 import pandas as pd
 from surprise import Dataset, Reader, SVD
 from surprise.model_selection import train_test_split
