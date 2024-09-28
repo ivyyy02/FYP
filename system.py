@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 import gzip
 import pickle
-from lightfm import LightFM
+from surprise import Dataset, Reader, SVD
+from surprise.model_selection import train_test_split
 from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
-import scipy.sparse as sparse
 
 # Load the compressed pickle file (final_df.pkl.gz)
 @st.cache_data
@@ -17,28 +17,37 @@ def load_data():
 # Load the data
 df = load_data()
 
-# Prepare the data for LightFM (Collaborative Filtering)
-def prepare_sparse_matrix(df):
-    user_item_matrix = df.pivot(index='Author_ID', columns='Product_ID', values='Rating_Given').fillna(0)
-    sparse_user_item = sparse.csr_matrix(user_item_matrix.values)
-    return sparse_user_item, user_item_matrix
+# Prepare the data for the Surprise model (Collaborative Filtering)
+def prepare_surprise_data(df):
+    reader = Reader(rating_scale=(1, 5))  # Adjust scale based on your rating
+    data = Dataset.load_from_df(df[['Author_ID', 'Product_ID', 'Rating_Given']], reader)
+    return data
 
-sparse_user_item, user_item_matrix = prepare_sparse_matrix(df)
+# Load Surprise data
+data = prepare_surprise_data(df)
 
-# Train the LightFM model
-def train_lightfm_model(sparse_user_item):
-    model = LightFM(loss='warp')  # Using Weighted Approximate-Rank Pairwise loss
-    model.fit(sparse_user_item, epochs=30, num_threads=4)
-    return model
+# Train-test split
+trainset, testset = train_test_split(data, test_size=0.2)
 
-lightfm_model = train_lightfm_model(sparse_user_item)
+# Train the SVD model
+model = SVD()
+model.fit(trainset)
 
-# Function to get top N LightFM recommendations for a specific user
-def get_lightfm_recommendations(user_id, model, user_item_matrix, df, n=5):
-    user_idx = list(user_item_matrix.index).index(user_id)
-    scores = model.predict(user_idx, np.arange(sparse_user_item.shape[1]))
-    top_indices = scores.argsort()[::-1][:n]
-    recommended_products = df[df['Product_ID'].isin(user_item_matrix.columns[top_indices])]
+# Function to get top N SVD recommendations for a specific user
+def get_svd_recommendations(user_id, model, df, n=5):
+    product_ids = df['Product_ID'].unique()
+    recommendations = []
+    
+    for product_id in product_ids:
+        pred = model.predict(user_id, product_id)
+        recommendations.append((product_id, pred.est))
+
+    # Sort recommendations by estimated rating
+    recommendations.sort(key=lambda x: x[1], reverse=True)
+    top_n_products = recommendations[:n]
+
+    # Get product details from the original DataFrame
+    recommended_products = df[df['Product_ID'].isin([prod[0] for prod in top_n_products])]
     return recommended_products[['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 'Rating_Given']]
 
 # Content-Based Filtering setup
@@ -62,15 +71,15 @@ def get_cb_recommendations(product_id, df, nn, n=5):
     return df.iloc[top_n_similar_products][['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 'Rating_Given']]
 
 # Hybrid Recommendation System
-def hybrid_recommendations(user_id, product_id, lightfm_model, nn, df, n=5):
-    # Get LightFM recommendations
-    lightfm_recommendations = get_lightfm_recommendations(user_id, lightfm_model, user_item_matrix, df, n=n)
+def hybrid_recommendations(user_id, product_id, model, nn, df, n=5):
+    # Get SVD recommendations
+    svd_recommendations = get_svd_recommendations(user_id, model, df, n=n)
     
     # Get Content-Based recommendations
     cb_recommendations = get_cb_recommendations(product_id, df, nn, n=n)
     
-    # Combine LightFM and CB recommendations
-    combined_recommendations = pd.concat([lightfm_recommendations, cb_recommendations]).drop_duplicates(subset='Product_ID')
+    # Combine SVD and CB recommendations
+    combined_recommendations = pd.concat([svd_recommendations, cb_recommendations]).drop_duplicates(subset='Product_ID')
     
     return combined_recommendations.head(n)
 
@@ -81,7 +90,7 @@ product_id = st.text_input("Enter Product ID:", value="P421996")
 
 if st.button("Get Recommendations"):
     try:
-        recommended_products = hybrid_recommendations(author_id, product_id, lightfm_model, nn, df, n=5)
+        recommended_products = hybrid_recommendations(author_id, product_id, model, nn, df, n=5)
         st.write(f"Top 5 hybrid recommendations for user {author_id} based on product {product_id}:")
         st.dataframe(recommended_products)
     except Exception as e:
