@@ -47,6 +47,10 @@ nn.fit(tfidf_matrix)
 
 # Function to get product recommendations based on Content-Based Filtering using Nearest Neighbors
 def get_cb_recommendations(product_id, df, nn, n=5):
+    # Check if product_id exists in the dataset
+    if product_id not in df['Product_ID'].values:
+        raise ValueError("Product ID not found in the dataset.")
+    
     # Get index of the given product
     product_index = df[df['Product_ID'] == product_id].index[0]
     
@@ -61,8 +65,11 @@ def get_cb_recommendations(product_id, df, nn, n=5):
 # Streamlit Interface
 st.title("Product Recommendation System")
 
-# Input for the product ID
-product_id = st.text_input("Enter Product ID:", value="P421996")
+# Provide a list of available Product_IDs for user selection
+available_product_ids = df['Product_ID'].unique().tolist()
+
+# Create an input field for users to input any Product ID
+product_id = st.selectbox("Select a Product ID:", available_product_ids)
 
 # Number of recommendations
 num_recommendations = st.number_input("Number of recommendations:", min_value=1, max_value=20, value=5)
