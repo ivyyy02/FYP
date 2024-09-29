@@ -36,16 +36,23 @@ df_grouped['combined_features'] = (
     df_grouped['Loves_Count_Product']
 )
 
+# Cache the vectorizer and model fitting to avoid recomputing every time
 @st.cache_data
-# Initialize a TF-IDF Vectorizer
-tfidf_vectorizer = TfidfVectorizer(stop_words='english', max_features=10000, min_df=2, max_df=0.7)
+def vectorize_and_fit(df_grouped):
+    # Initialize a TF-IDF Vectorizer
+    tfidf_vectorizer = TfidfVectorizer(stop_words='english', max_features=10000, min_df=2, max_df=0.7)
 
-# Create a matrix of TF-IDF features
-tfidf_matrix = tfidf_vectorizer.fit_transform(df_grouped['combined_features'])
+    # Create a matrix of TF-IDF features
+    tfidf_matrix = tfidf_vectorizer.fit_transform(df_grouped['combined_features'])
 
-# Initialize NearestNeighbors with cosine similarity
-nn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=5)  # Increased n_neighbors for better diversity
-nn.fit(tfidf_matrix)
+    # Initialize NearestNeighbors with cosine similarity
+    nn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=5)
+    nn.fit(tfidf_matrix)
+
+    return tfidf_matrix, nn
+
+# Vectorize and fit
+tfidf_matrix, nn = vectorize_and_fit(df_grouped)
 
 # Function to get product recommendations based on Content-Based Filtering using Nearest Neighbors
 def get_cb_recommendations(product_id, df_grouped, nn, n=5):
