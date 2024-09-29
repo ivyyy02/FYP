@@ -16,7 +16,7 @@ def load_data():
 df = load_data()
 
 # Reduce the data size 
-df = df.sample(frac=0.3) 
+df = df.sample(frac=0.5) 
 
 # Handle missing values by filling NaN with empty strings in relevant columns
 df['Product_Name'] = df['Product_Name'].fillna('')
