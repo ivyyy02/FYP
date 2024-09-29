@@ -83,11 +83,17 @@ def get_cb_recommendations(product_id, df_grouped, nn, n=5):
 # Streamlit Interface
 st.title("Product Recommendation System")
 
-# Provide a list of available Product_IDs for user selection
-available_product_ids = df_grouped['Product_ID'].unique().tolist()
+# Provide a list of available Product_IDs and their corresponding names for user selection
+available_products = df_grouped[['Product_ID', 'Product_Name']].drop_duplicates()
+
+# Create a new list of options where each option is a string combining the Product ID and Product Name
+available_product_options = [f"{row['Product_ID']} - {row['Product_Name']}" for _, row in available_products.iterrows()]
 
 # Store the current selected Product_ID
-selected_product_id = st.selectbox("Select a Product ID:", available_product_ids, index=available_product_ids.index('P107306'))
+selected_product_option = st.selectbox("Select a Product ID:", available_product_options)
+
+# Extract the Product_ID from the selected option (since we combined Product_ID and Product_Name in the dropdown)
+selected_product_id = selected_product_option.split(' - ')[0]
 
 # Number of recommendations
 num_recommendations = st.number_input("Number of recommendations:", min_value=1, max_value=20, value=5)
@@ -100,4 +106,5 @@ if st.button("Get Recommendations"):
         st.dataframe(recommendations)
     except Exception as e:
         st.error(f"Error occurred: {e}")
+
 
