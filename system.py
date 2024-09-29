@@ -6,7 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
 import streamlit as st
 
-# Load the compressed pickle file (final_df.pkl.gz)
+# Load the compressed pickle file
 @st.cache_data
 def load_data():
     with gzip.open('final_df.pkl.gz', 'rb') as f:
@@ -14,8 +14,6 @@ def load_data():
     # Reduce the data size
     df = df.sample(frac=0.5)  
     return df
-
-# Load data
 df = load_data()
 
 # Handle missing values by filling NaN with empty strings in relevant columns
@@ -42,16 +40,12 @@ df_grouped['combined_features'] = (
     df_grouped['Text_Review'] + ' ' +
     df_grouped['Price'] + ' ' +
     df_grouped['Average_Rating_Product'] + ' ' +
-    df_grouped['Loves_Count_Product']
-)
+    df_grouped['Loves_Count_Product'])
 
 # Cache the vectorizer and model fitting to avoid recomputing every time
 @st.cache_data
 def vectorize_and_fit(df_grouped):
-    # Initialize a TF-IDF Vectorizer
     tfidf_vectorizer = TfidfVectorizer(stop_words='english', max_features=10000, min_df=2, max_df=0.7)
-
-    # Create a matrix of TF-IDF features
     tfidf_matrix = tfidf_vectorizer.fit_transform(df_grouped['combined_features'])
 
     # Initialize NearestNeighbors with cosine similarity
