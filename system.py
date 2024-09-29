@@ -1,4 +1,6 @@
 import pandas as pd
+import gzip
+import pickle
 from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
 import streamlit as st
