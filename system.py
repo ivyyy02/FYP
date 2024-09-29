@@ -52,11 +52,17 @@ def get_cb_recommendations(product_id, df_grouped, nn, n=5):
     
     # Find the top N nearest neighbors (similar products)
     distances, indices = nn.kneighbors(tfidf_matrix[product_index], n_neighbors=n+1)  # +1 because the product itself will be included
+    
     # Get the top N similar products
     top_n_similar_products = indices.flatten()[1:n+1]  # Skip the first as it will be the product itself
-    
-    return df_grouped.iloc[top_n_similar_products][['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 
-                                                    'Primary_Category', 'Average_Rating_Product', 'Loves_Count_Product']]
+
+    # Filter out the product itself from the recommendations
+    similar_products = df_grouped.iloc[top_n_similar_products]
+    similar_products = similar_products[similar_products['Product_ID'] != product_id]
+
+    return similar_products[['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 
+                             'Primary_Category', 'Average_Rating_Product', 'Loves_Count_Product']]
+
 
 # Streamlit interface
 st.title("Product Recommendation System")
