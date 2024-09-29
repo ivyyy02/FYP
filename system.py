@@ -15,9 +15,11 @@ def load_data():
     df = df.sample(frac=0.5)  
     return df
 
+# Load data
+df = load_data()
 
 # Group by 'Product_ID' and concatenate the reviews
-df_grouped = df_grouped.groupby(['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 
+df_grouped = df.groupby(['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 
                          'Average_Rating_Product', 'Loves_Count_Product'])['Text_Review'].apply(lambda x: ' | '.join(x.astype(str))).reset_index()
 
 # Convert the numeric columns to strings before concatenating
@@ -68,13 +70,13 @@ def get_cb_recommendations(product_id, df_grouped, nn, n=5):
     
     # Get the top N similar products
     top_n_similar_products = indices.flatten()[1:n+1]  # Skip the first as it will be the product itself
-    return df.iloc[top_n_similar_products][['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 'Average_Rating_Product', 'Loves_Count_Product']]
+    return df_grouped.iloc[top_n_similar_products][['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 'Average_Rating_Product', 'Loves_Count_Product']]
 
 # Streamlit Interface
 st.title("Product Recommendation System")
 
 # Provide a list of available Product_IDs for user selection
-available_product_ids = df['Product_ID'].unique().tolist()
+available_product_ids = df_grouped['Product_ID'].unique().tolist()
 
 # Store the current selected Product_ID
 selected_product_id = st.selectbox("Select a Product ID:", available_product_ids, index=available_product_ids.index('P107306'))
@@ -85,9 +87,8 @@ num_recommendations = st.number_input("Number of recommendations:", min_value=1,
 # Button to get recommendations
 if st.button("Get Recommendations"):
     try:
-        recommendations = get_cb_recommendations(selected_product_id, df, nn, n=num_recommendations)
+        recommendations = get_cb_recommendations(selected_product_id, df_grouped, nn, n=num_recommendations)
         st.write(f"Top {num_recommendations} similar products to {selected_product_id}:")
         st.dataframe(recommendations)
     except Exception as e:
         st.error(f"Error occurred: {e}")
-
