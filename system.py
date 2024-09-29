@@ -11,13 +11,10 @@ import streamlit as st
 def load_data():
     with gzip.open('final_df.pkl.gz', 'rb') as f:
         df = pickle.load(f)
+    # Reduce the data size
+    df = df.sample(frac=0.5)  
     return df
 
-# Load the data
-df = load_data()
-
-# Reduce the data size 
-df = df.sample(frac=0.5)
 
 # Group by 'Product_ID' and concatenate the reviews
 df_grouped = df.groupby(['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 
@@ -39,8 +36,9 @@ df_grouped['combined_features'] = (
     df_grouped['Loves_Count_Product']
 )
 
+@st.cache_data
 # Initialize a TF-IDF Vectorizer
-tfidf_vectorizer = TfidfVectorizer(stop_words='english', max_features=15000, min_df=2, max_df=0.7)
+tfidf_vectorizer = TfidfVectorizer(stop_words='english', max_features=10000, min_df=2, max_df=0.7)
 
 # Create a matrix of TF-IDF features
 tfidf_matrix = tfidf_vectorizer.fit_transform(df_grouped['combined_features'])
