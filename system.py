@@ -16,6 +16,9 @@ def load_data():
 # Load the data
 df = load_data()
 
+# Reduce the data size 
+df = df.sample(frac=0.5)
+
 # Group by 'Product_ID' and concatenate the reviews
 df_grouped = df.groupby(['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 
                          'Average_Rating_Product', 'Loves_Count_Product'])['Text_Review'].apply(lambda x: ' | '.join(x.astype(str))).reset_index()
