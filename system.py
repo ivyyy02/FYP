@@ -3,13 +3,14 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
 import streamlit as st
 
-# Load your dataset (ensure you have a valid data loading mechanism)
+# Load the compressed pickle file (final_df.pkl.gz)
 @st.cache_data
 def load_data():
-    # Assuming you have saved your df_grouped in a pickle or similar format
-    df = pd.read_pickle('final_df.pkl')  # Replace with your actual file path
+    with gzip.open('final_df.pkl.gz', 'rb') as f:
+        df = pickle.load(f)
     return df
 
+# Load the data
 df = load_data()
 
 # Handle missing values by filling NaN with empty strings in relevant columns
