@@ -17,7 +17,7 @@ def load_data():
 
 
 # Group by 'Product_ID' and concatenate the reviews
-df_grouped = df.groupby(['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 
+df_grouped = df_grouped.groupby(['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 
                          'Average_Rating_Product', 'Loves_Count_Product'])['Text_Review'].apply(lambda x: ' | '.join(x.astype(str))).reset_index()
 
 # Convert the numeric columns to strings before concatenating
