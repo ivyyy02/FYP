@@ -18,9 +18,16 @@ def load_data():
 # Load data
 df = load_data()
 
+# Handle missing values by filling NaN with empty strings in relevant columns
+df['Product_Name'] = df['Product_Name'].fillna('')
+df['Brand_Name'] = df['Brand_Name'].fillna('')
+df['Primary_Category'] = df['Primary_Category'].fillna('')
+df['Text_Review'] = df['Text_Review'].apply(lambda tokens: ' '.join(tokens) if isinstance(tokens, list) else tokens).fillna('')
+df['Price'] = df['Price'].astype(str)
+
 # Group by 'Product_ID' and concatenate the reviews
 df_grouped = df.groupby(['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 
-                         'Average_Rating_Product', 'Loves_Count_Product'])['Text_Review'].apply(lambda x: ' | '.join(x.astype(str))).reset_index()
+                         'Average_Rating_Product', 'Loves_Count_Product'])['Text_Review'].apply(lambda x: ' | '.join(x)).reset_index()
 
 # Convert the numeric columns to strings before concatenating
 df_grouped['Price'] = df_grouped['Price'].astype(str)
