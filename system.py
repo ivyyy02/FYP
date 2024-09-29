@@ -20,8 +20,10 @@ df = load_data()
 df_grouped = df.groupby(['Product_ID', 'Product_Name', 'Brand_Name', 'Price', 'Primary_Category', 
                          'Average_Rating_Product', 'Loves_Count_Product'])['Text_Review'].apply(lambda x: ' | '.join(x)).reset_index()
 
-# Convert 'Price' column to string before concatenating
-df['Price'] = df['Price'].astype(str)
+# Convert the numeric columns to strings before concatenating
+df_grouped['Price'] = df_grouped['Price'].astype(str)
+df_grouped['Average_Rating_Product'] = df_grouped['Average_Rating_Product'].astype(str)
+df_grouped['Loves_Count_Product'] = df_grouped['Loves_Count_Product'].astype(str)
 
 # Enhance combined features by incorporating more descriptive product attributes
 df_grouped['combined_features'] = (
@@ -29,8 +31,13 @@ df_grouped['combined_features'] = (
     df_grouped['Brand_Name'] + ' ' +
     df_grouped['Primary_Category'] + ' ' +
     df_grouped['Text_Review'] + ' ' +
-    df_grouped['Price']
+    df_grouped['Price'] + ' ' +
+    df_grouped['Average_Rating_Product'] + ' ' +
+    df_grouped['Loves_Count_Product']
 )
+
+# Now continue with TF-IDF vectorization and the recommendation system as before
+
 
 # Initialize a TF-IDF Vectorizer
 tfidf_vectorizer = TfidfVectorizer(stop_words='english', max_features=15000, min_df=2, max_df=0.7)
