@@ -69,10 +69,10 @@ def get_cb_recommendations(product_id, df_grouped, nn, n=5):
 st.title("Product Recommendation System")
 
 # Provide a list of available Product_IDs for user selection
-available_product_ids = df_grouped['Product_ID'].unique().tolist()
+available_product_ids = df['Product_ID'].unique().tolist()
 
-# Create an input field for users to input any Product ID
-product_id = st.selectbox("Select a Product ID:", available_product_ids)
+# Store the current selected Product_ID
+selected_product_id = st.selectbox("Select a Product ID:", available_product_ids, index=available_product_ids.index('P107306'))
 
 # Number of recommendations
 num_recommendations = st.number_input("Number of recommendations:", min_value=1, max_value=20, value=5)
@@ -80,8 +80,9 @@ num_recommendations = st.number_input("Number of recommendations:", min_value=1,
 # Button to get recommendations
 if st.button("Get Recommendations"):
     try:
-        recommendations = get_cb_recommendations(product_id, df, nn, n=num_recommendations)
-        st.write(f"Top {num_recommendations} similar products to {product_id}:")
+        recommendations = get_cb_recommendations(selected_product_id, df, nn, n=num_recommendations)
+        st.write(f"Top {num_recommendations} similar products to {selected_product_id}:")
         st.dataframe(recommendations)
     except Exception as e:
         st.error(f"Error occurred: {e}")
+
